@@ -48,6 +48,8 @@ My pipeline consisted of seven steps as follows:
  ![alt text][roi2]
  
 
+#### Draw lines function enhancement
+
 In order to draw a single line on the left and right lanes, I modified the draw_lines() function by the following operations:
 * Line selection by their orientation. See function line_selection
 * Merging and draw a single line by MergeLines function, including the steps below:
