@@ -8,6 +8,7 @@ class Node(object):
         self.outbound_nodes = []
         # A calculated value
         self.value = None
+        self.gradients = {}
         # Add this node as an outbound node on its inputs.
         for n in self.inbound_nodes:
             n.outbound_nodes.append(self)
@@ -20,8 +21,11 @@ class Node(object):
         Compute the output value based on `inbound_nodes` and
         store the result in self.value.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
+
+    def backward(self):
+        raise NotImplementedError
 
 class Input(Node):
     def __init__(self):
@@ -41,6 +45,12 @@ class Input(Node):
     def forward(self, value=None):
         if value is not None:
             self.value = value
+
+    def backward(self):
+        self.gradients = {self: 0}
+        for n in self.outbound_nodes:
+            grad_cost = n.gradients[self]
+            self.gradients[self] += grad_cost * 1
 
 
 class Add(Node):
@@ -119,6 +129,17 @@ class Linear(Node):
         b = self.inbound_nodes[2].value
         self.value = np.dot(X, W) + b
 
+    def backward(self):
+        self.gradients = {n: np.zeros_like(n.value) for n in self.inbound_nodes}
+        for n in self.outbound_nodes:
+            grad_cost = n.gradients[self]
+            # grad X = grad cost * W
+            self.gradients[self.inbound_nodes[0]] += np.dot(grad_cost, self.inbound_nodes[1].value.T)
+            # grad W = X * grad cost
+            self.gradients[self.inbound_nodes[1]] += np.dot(self.inbound_nodes[0].value.T, grad_cost)
+            # grad b = sum
+            self.gradients[self.inbound_nodes[2]] += np.sum(grad_cost, axis=0, keepdims=False)
+
 class Sigmoid(Node):
     """
     You need to fix the `_sigmoid` and `forward` methods.
@@ -151,10 +172,61 @@ class Sigmoid(Node):
         # if you test without changing this method.
         self.value = self._sigmoid(self.inbound_nodes[0].value)
 
+    def backward(self):
+        """
+        Calculates the gradient using the derivative of
+        the sigmoid function.
+        """
+        # Initialize the gradients to 0.
+        self.gradients = {n: np.zeros_like(n.value) for n in self.inbound_nodes}
 
-"""
-No need to change anything below here!
-"""
+        # Cycle through the outputs. The gradient will change depending
+        # on each output, so the gradients are summed over all outputs.
+        for n in self.outbound_nodes:
+            # Get the partial of the cost with respect to this node.
+            grad_cost = n.gradients[self]
+            self.gradients[self.inbound_nodes[0]] += grad_cost* self.value * (1.0-self.value)
+
+
+class MSE(Node):
+    def __init__(self, y, a):
+        """
+        The mean squared error cost function.
+        Should be used as the last node for a network.
+        """
+        # Call the base class' constructor.
+        Node.__init__(self, [y, a])
+
+    def forward(self):
+        """
+        Calculates the mean squared error.
+        """
+        # NOTE: We reshape these to avoid possible matrix/vector broadcast
+        # errors.
+        #
+        # For example, if we subtract an array of shape (3,) from an array of shape
+        # (3,1) we get an array of shape(3,3) as the result when we want
+        # an array of shape (3,1) instead.
+        #
+        # Making both arrays (3,1) insures the result is (3,1) and does
+        # an elementwise subtraction as expected.
+        y = self.inbound_nodes[0].value.reshape(-1, 1)
+        a = self.inbound_nodes[1].value.reshape(-1, 1)
+        self.m = self.inbound_nodes[0].value.shape[0]
+        self.diff = y - a
+        self.value = np.mean(self.diff**2)
+
+    def backward(self):
+        """
+        Calculates the gradient of the cost.
+
+        This is the final node of the network so outbound nodes
+        are not a concern.
+        """
+        self.gradients[self.inbound_nodes[0]] = (2 / self.m) * self.diff
+        self.gradients[self.inbound_nodes[1]] = (-2 / self.m) * self.diff
+
+
 
 
 def topological_sort(feed_dict):
@@ -215,3 +287,11 @@ def forward_pass(output_node, sorted_nodes):
         n.forward()
 
     return output_node.value
+
+def forward_and_backward(graph):
+    for n in graph:
+        n.forward()
+
+    for n in graph[::-1]:
+        n.backward()
+
