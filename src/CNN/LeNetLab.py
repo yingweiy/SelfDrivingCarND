@@ -45,9 +45,9 @@ X_train, y_train = shuffle(X_train, y_train)
 EPOCHS = 10
 BATCH_SIZE = 128
 
-def conv2d(input, filter_size, height=1, nchannels=1, stride=1, padding = 'VALID', mu=0, sigma = 0.1):
-    F_W = tf.Variable(tf.random_normal([filter_size, filter_size, height, nchannels], mean=mu, stddev=sigma))
-    F_b = tf.Variable(tf.zeros([nchannels]))
+def conv2d(input, filter_size, nchannels=1, nfilters=1, stride=1, padding = 'VALID', mu=0, sigma = 0.1):
+    F_W = tf.Variable(tf.random_normal([filter_size, filter_size, nchannels, nfilters], mean=mu, stddev=sigma))
+    F_b = tf.Variable(tf.zeros([nfilters]))
     strides = [1, stride, stride, 1]
     return tf.nn.relu(tf.nn.conv2d(input, F_W, strides, padding) + F_b)
 
