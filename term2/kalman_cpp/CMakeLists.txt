@@ -1,4 +1,4 @@
 project(KalmanFilter)
-set (SOURCE_FILES kalman_main_single_file.cpp)
+set (SOURCE_FILES main.cpp kalman_filter.cpp kalman_filter.h tracking.cpp tracking.h measurement_package.h)
 include_directories(./Eigen)
-add_executable(kalman1 ${SOURCE_FILES})
+add_executable(laser ${SOURCE_FILES})

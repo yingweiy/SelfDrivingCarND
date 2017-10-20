@@ -15,12 +15,12 @@ using namespace Eigen;
 //Kalman Filter variables
 VectorXd x;	// object state
 MatrixXd P;	// object covariance matrix
-VectorXd u;	// external motion
+VectorXd u;	// external motion - input
 MatrixXd F; // state transition matrix
 MatrixXd H;	// measurement matrix
-MatrixXd R;	// measurement covariance matrix
+MatrixXd R;	// measurement covariance matrix - noise term
 MatrixXd I; // Identity matrix
-MatrixXd Q;	// process covariance matrix
+MatrixXd Q;	// process covariance matrix - noise term
 
 vector<VectorXd> measurements;
 void filter(VectorXd &x, MatrixXd &P);
@@ -118,18 +118,32 @@ void filter(VectorXd &x, MatrixXd &P) {
 
     for (unsigned int n = 0; n < measurements.size(); ++n) {
 
-        VectorXd z = measurements[n];
-        //YOUR CODE HERE
-
+        //////////////////////////////
         // KF Measurement update step
 
-        // new state
+        VectorXd z = measurements[n];
 
+        VectorXd y = z - H * x;
+
+        MatrixXd Ht = H.transpose();
+        MatrixXd S = H * P * Ht + R;
+
+        MatrixXd Si = S.inverse();
+        MatrixXd K = P * H.transpose() * Si;
+
+        //////////////////////////////////
+        // new state
+        x = x + (K * y);
+        P = (I - (K * H)) * P;
+
+        /////////////////////////////////
         // KF Prediction step
+        x = F * x + u;
+        MatrixXd Ft = F.transpose();
+        P = F * P * Ft + Q;
 
         std::cout << "x=" << std::endl <<  x << std::endl;
         std::cout << "P=" << std::endl <<  P << std::endl;
-
 
     }
 }
