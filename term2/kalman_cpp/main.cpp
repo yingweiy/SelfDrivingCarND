@@ -34,7 +34,7 @@ int main() {
     string line;
     // set i to get only first 3 measurments
     int i = 0;
-    while(getline(in_file, line) && (i<=3)){
+    while(getline(in_file, line) && (i<=1000)){
 
         MeasurementPackage meas_package;
 
@@ -60,6 +60,7 @@ int main() {
             continue;
         }
         i++;
+        cout << "Reading line " << i << endl;
 
     }
 
